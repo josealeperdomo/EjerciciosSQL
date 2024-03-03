@@ -1,0 +1,159 @@
+---------- EJERCICIO PARA PRACTICAR
+
+Este ejercicio tendra un enfoque a un sistema de gestion de tienda.
+
+1. Crear una base de datos llamada : tienda
+
+=======================
+
+CREATE DATABASE tienda;
+
+=======================
+
+
+    Crear 4 tablas dentro de la base de datos:
+
+
+    NOTA: Recuerden utilizar PRIMARY KEY, FOREIGN y el AUTO_INCREMENT.
+
+    - Tabla 1: usuarios (id, nombre, apellido, edad, email, contrasena, rol, fechaCreacion, fechaActualizacion).
+
+    - Tabla 2: categoria (id, nombre, tipo, fechaCreacion, fecha_actualizacion).
+
+    - Tabla 3: productos (id, nombre_producto, precio, stock, id_categoria, fechaCreacion, fechaActualizacion).
+
+    - Tabla 4: ventas (id, producto_id, usuario_id, cantidad, precio_total, fechaCreacion, fechaActualizacion).
+
+=======================
+
+CREATE TABLE usuarios(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255),
+    apellido VARCHAR(255),
+    edad INT,
+    email VARCHAR(255) UNIQUE,
+    contrasena VARCHAR(16),
+    rol VARCHAR(5) DEFAULT 'user',
+    fecha_de_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_de_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE categoria(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255),
+    tipo VARCHAR(255),
+    fecha_de_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_de_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE productos(
+    producto_id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_producto VARCHAR(255),
+    precio FLOAT,
+    stock INT,
+    idcategoria INT,
+    fecha_de_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_de_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (idcategoria) REFERENCES categoria(id)
+);
+
+    //TRIGGER calcular_precio_total
+
+    DELIMITER //
+
+    TRIGGER calcular_precio_total BEFORE INSERT ON ventas FOR EACH ROW
+        BEGIN
+            DECLARE precio_unidad FLOAT;
+            SELECT precio INTO precio_unidad FROM productos WHERE id = NEW.id_producto;
+                SET NEW.precio_total = NEW.cantidad * precio_unidad;
+        END //
+
+    DELIMITER ;
+
+CREATE TABLE ventas(
+    venta_id INT AUTO_INCREMENT PRIMARY KEY,
+    id_producto INT,
+    usuario_id INT,
+    cantidad INT,
+    precio_total FLOAT,
+    fecha_de_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_de_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (producto_id) REFERENCES productos(producto_id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);
+
+=======================
+
+
+2. Insertar datos:
+
+    - Insertar 5 usuarios (1 admin)
+    - Registrar 3 categorias
+    - Registrar 6 productos (2 por cada categoria)
+    - Registrar 10 ventas
+
+=========================
+
+INSERT INTO usuarios (nombre, apellido, edad, email, contrasena, rol) VALUES
+    ('Jose', 'Perdomo', 17, 'jose@gmail.com','jose1234','admin');
+
+INSERT INTO usuarios (nombre, apellido, edad, email, contrasena) VALUES
+    ('Pedro', 'Sanchez', 40, 'pedro@gmail.com','pedro1234'),
+    ('Maria', 'Carmona', 64, 'maria@gmail.com','maria7452'),
+    ('Ulises', 'Paria', 20, 'ulises@gmail.com','Ulises145414'),
+    ('Luis', 'Soto', 50, 'luis@gmail.com','Luis31$');
+
+INSERT INTO categoria(nombre, tipo) VALUES
+    ('Categoria 1', 'Telefonos'),
+    ('Categoria 2', 'Relojes'),
+    ('Categoria 3', 'Tablets');
+
+INSERT INTO productos(nombre_producto, precio, stock, id_categoria) VALUES
+    ('iphone 20', 999.99, 5, 1),
+    ('Samsung S30', 799.99, 2, 1),
+    ('appleWatch', 299.99, 0, 2),
+    ('samsungWatch', 299.99, 4, 2),
+    ('ipad', 499.99, 2, 3),
+    ('galaxy tab', 699.99, 5, 3);
+
+INSERT INTO ventas (id_producto, usuario_id, cantidad, precio_total) VALUES
+    (2,3,2),
+    (1,3,1),
+    (6,5,4),
+    (3,4,4),
+    (5,4,3),
+    (2,3,5),
+    (1,2,3),
+    (4,3,2),
+    (6,4,1),
+    (3,4,1);
+    
+=========================
+
+
+3. Consultas a realizar 
+
+    - Seleccionar usuarios con un rol especifico.
+    - Obtener el stock disponible de todos los productos.
+    - Calcular el total de ventas por usuario_id
+    - Actualizar el precio de un producto mayor a 100 y aplicar descuento del 10%.
+    - Eliminar ventas de un producto agotado (con un stock de 0).
+
+
+=========================
+
+SELECT * FROM usuarios WHERE rol = 'user';
+
+SELECT sum(stock) AS total_stock FROM productos;
+
+SELECT usuarios.id, usuarios.nombre, count(*) AS total_ventas FROM ventas
+INNER JOIN usuarios ON usuarios.id = ventas.usuario_id
+GROUP BY usuarios.id;
+
+UPDATE productos SET precio = 799.99 - (799.99 * 0.10) WHERE producto_id = 5;
+
+DELETE FROM ventas 
+WHERE id_producto IN
+(SELECT id_producto FROM ventas JOIN productos ON ventas.id_producto = producto_id WHERE productos.stock = 0);
+
+=========================
